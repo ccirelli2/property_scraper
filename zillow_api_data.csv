@@ -1,0 +1,16 @@
+Key, Value
+zillow_id,103003539
+home_type,SingleFamily
+tax_year,2018
+tax_value,481600.0
+year_built,2012
+last_sold_date,04/01/2020
+last_sold_price,504813
+home_size,3813
+property_size,3920
+num_bedrooms,4
+num_bathrooms,3.0
+zillow_low_est,486309
+zillow_high_est,537499
+zillow_value_change,-42102
+zillow_percentile,0
