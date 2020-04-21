@@ -10,6 +10,9 @@ from datetime import datetime
 import random
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 # IMPORT MODULES----------------------------------------------------------------------
@@ -22,103 +25,93 @@ import module4_url_filters as m4
 # INSTANTIATE CONNECTION TO MYSQL DATABASE--------------------------------------------
 mydb = mysql.connector.connect(
                 host='localhost',
-                user= 'cc2',
-                passwd= 'Gsu2020!',
-                database= 'upwork_property_scraper',
+                user='cc2',
+                passwd='Gsu2020!',
+                database='upwork_property_scraper',
                 auth_plugin='mysql_native_password')
 
 
-# DEFINE PULL DATE-------------------------------------------------------------------
-pull_date = datetime.today().date()
-
-
-# URL SYNTAX FOR FILTERS------------------------------------------------------------
-
-
-
-# SCRAPE DATA FOR EACH PAGE-----------------------------------------------------------
+# SCRAPER FUNCTION -----------------------------------------------------------
 def main_get_home_data(city, state):
-    # Create DataFrame Object - Holds Housing Data
-    df_home_data = pd.DataFrame({})
 
-    # Get bsObj and max page Num
+    # Get Max Page Number
     max_page_num = m2.get_bsObj_main_page(city, state, 1, 'max_page_num')
-    print("page numbe", max_page_num)
 
-    # Lists to capture Home Data
-    '''to be replaced by insert statements'''
-
-    # Iterate Over Pages_________________________________________________
-    '''We iterate over each page, scraping the housing address from the list of houses'''
+    # Iterate Over Pages (max_page_num because its up to but not including)
     for page_num in range(1, max_page_num + 1):
 
         # User Info
-        print('Scraping page {} of {} --------------------------------------------------------'\
+        print('Scraping page {} of {} -----------------------------------------'\
 				.format(page_num, max_page_num))
+
+        # Generate Datetime Object
         pull_date = datetime.today().date()
 
-        # Get Tags where house photos are saved on page (list of houses)
+        # Get Beautiful Soup Object of Page N that contain links to each home listing
         bsObj = m2.get_bsObj_main_page(city, state, page_num)
 
         # Get List of Houses (Photo-cards) for each page)
         list_homes = m2.get_list_homes(bsObj)
 
-		# Page Counts
-        Count_num_pages = 1
+		# Count Homes Scraped Obj
         count_homes_scraped = 0
 
-        #LOOP OVER HOME TAGS________________________________________________________________
-
-        if list_homes != None:
+        # Loop over home tags and scrape data --------------------------------
+        if list_homes:
             for home in list_homes:
 
-                # Asking price
-                asking_price = m2.get_sale_asking_price(home)
-
-                # Num home object
-                total_homes_on_page = len(list_homes)
-
-                # Clean house tags
+                # Get Tag Containing Address & Zip Code
                 clean_house_tags = m2.clean_house_tags_4_address_zipcode_scrape(home)
-                # Can return none object.  pass if None.
-                if clean_house_tags == None:
-                    pass
 
-                # Otherwise, start scraping data
+                # Function may return null obj. Pass if None.
+                if not clean_house_tags:
+                    logging.info('No house tags found')
+
                 else:
-                    # ADDRESSES TABLE--------------------------------------------------
-                    'street_address, state, zipcode, city, pull_date, url'
                     # Get Url
                     url = m2.get_url(home)
-                    # Obtain Zipcode
-                    zip_code	= m2.get_zip_code(clean_house_tags)
-                    # Obtain Address
-                    address		= m2.get_address(clean_house_tags)
-                    # Insert Data Into Database
+
+                    # Get Home Details -------------------------------------------
+
+                    # Get Asking Price
+                    asking_price = m2.get_sale_asking_price(home, url)
+
+                    # Num home object
+                    total_homes_on_page = len(list_homes)
+
+                    # Get Zipcode
+                    zip_code = m2.get_zip_code(clean_house_tags)
+                    # Get Address
+                    address = m2.get_address(clean_house_tags)
+                    # Insert Address Fields into Address Table
                     val_addresses = [address, state, zip_code, city, pull_date, url]
                     m1.sql_insert_function_addresses(mydb, val_addresses)
 
-                    # ZILLOW API---------------------------------------------------------
+                    # Get & Insert Fields From Zillow API ------------------------------
                     val_zillow_api_data = m3.get_house_data_zillow_api(address, zip_code,
-                                                pull_date, asking_price)
+                                                                       pull_date, asking_price)
                     m1.sql_insert_function_zillow_api_data(mydb, val_zillow_api_data)
 
-                    # SCHOOL RANKINGS----------------------------------------------------
+                    # Get & Insert School Ranking Info ---------------------------------
                     school_rankings = m2.get_school_ranking(url)
-                    m1.sql_insert_function_schools(	mydb, school_rankings, address,
-                                                pull_date, url)
+                    m1.sql_insert_function_schools(mydb, school_rankings, address,
+                                                   pull_date, url)
 
                     # Increment Num homes
                     print('{} of {} home data scraped'.format(
                         count_homes_scraped, total_homes_on_page))
-                    count_homes_scraped +=1
+                    count_homes_scraped += 1
 
 
             # Generate Random Sleep Period
-            print('Data successfully scraped for page {}'.format(page_num))
-            sleep_seconds = random.randint(5,10)
-            print('Sleeping for {} seconds\n'.format(sleep_seconds))
+            logging.info('Data successfully scraped for page {}'.format(page_num))
+            sleep_seconds = random.randint(5, 10)
+            logging.info('Sleeping for {} seconds\n'.format(sleep_seconds))
             sleep(sleep_seconds)
+
+        # No Homes Found
+        else:
+            logging.warning('No homes found in search.  Ending scraper program')
 
     return None
 
@@ -137,28 +130,36 @@ def main_get_home_data(city, state):
 
 # MAIN FUNCTION----------------------------------------------------------------
 
+logging.info('\n ************************ INITIALIZING SCRAPER ******************************\n')
+
 # Define Run-Type:
-run_type = input('Run scraper for an individual city or all? (write: indv or all)' )
+def run_scraper():
+    # Choose Run-Type
+    print('How do you wan to run the scraper, for an individual state and city or all cities in a given state?')
+    run_type = input('Acceptable responses => indv or all: ')
 
+    # Run For Single State + City
+    if run_type == 'indv':
+        # User Input Data:
+        State = input('Enter State (ex: GA)    : ')
+        City = input('Enter City (ex: Roswell): ')
 
-# If Individual - Input City/State
-if run_type == 'indv':
-	# User Input Data:
-	City =  input('Enter City (ex: Roswell): ')
-	State = input('Enter State (ex: GA)    : ')
+        # Run Scraper for Selected City/State
+        main_get_home_data(City, State)
 
-	# Run Scraper for Selected City/State
-	main_get_home_data(City, State)
+    # Run For State + List of Cities
+    elif run_type == 'all':
+        # Obtain list of cities from MySQL Table
+        df_cities = list(m1.get_ga_muni_data(mydb)['NAME'])
+        # Iterate Cities
+        for city in df_cities:
+            # Scrape data
+            main_get_home_data(city, 'GA')
+            logging.info('Scraping data for city => {}'.format())
+    else:
+        logging.warning('Input value incorrect. Must be either "indv or all"')
 
-elif run_tupe == 'all':
-	df_cities = list(m1.get_ga_muni_data(mydb)['NAME'])
-
-	for city in df_cities:
-		main_get_home_data(city, 'GA')
-		print('Scraping data for city => {}'.format())
-else:
-	print('Input value incorrect.  Needs to be either "indv or all"')
-
+run_scraper()
 
 # NOTES_ ----------------------------------------------------------------------
 '''Add filter for home types'''

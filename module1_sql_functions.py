@@ -2,11 +2,11 @@ import pandas as pd
 import mysql.connector
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
-
+from datetime import datetime
 
 
 # MYSQL - CLEAR TABLE FUNCTION-----------------------------------------
-def clear_table(mydb, decision = 'No'):
+def clear_table(mydb, decision='No'):
 
     if decision in ('Yes', 'yes'):
 
@@ -31,7 +31,7 @@ def clear_table(mydb, decision = 'No'):
         mydb.commit()
         print("Data successfully cleared from 'Schools' table\n")
 
-    elif decision == 'No' or decision == 'no':
+    elif decision in ('No', 'no'):
         # Do Not Delete Table Data
         print('''Data will not be cleared from the Addresses,
                  House details and Schools tables\n''')
@@ -39,6 +39,20 @@ def clear_table(mydb, decision = 'No'):
     # Return None
     return None
 
+
+def sql_insert_warning_logs(mydb, module, funct, url, warning, err):
+    ''' Desc:  Insert warning logs into sql table
+    '''
+    pull_date = datetime.today().date()
+    vals = [url, pull_date, module, funct, warning, err]
+    sql_command = '''
+    INSERT INTO LOGS (
+    url_logs, pull_date, module, funct, warning, err)
+    VALUES(%s, %s, %s, %s, %s, %s)'''
+    mycursor = mydb.cursor()
+    mycursor.execute(sql_command, vals)
+    mydb.commit()
+    return None
 
 
 # ADDRESS INSERT FUNCTION ------------------------------------------------
