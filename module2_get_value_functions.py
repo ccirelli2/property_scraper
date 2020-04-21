@@ -16,10 +16,10 @@ from time import sleep
 import logging
 
 
-# Import Project Modules
+# Import Project Modules ---------------------------------------------
 import module1_sql_functions as m1
 
-# Instantiate Connect to MySQL
+# Instantiate Connect to MySQL ---------------------------------------
 mydb = mysql.connector.connect(
         host='localhost',
         user='cc2',
@@ -27,7 +27,9 @@ mydb = mysql.connector.connect(
         database='upwork_property_scraper',
         auth_plugin='mysql_native_password')
 
-# GET MAX PAGE NUMBER -------------------------------------------------
+
+# Functions -----------------------------------------------------------
+
 def get_max_page_num(bsObj):
     '''
     Purpose:    Get the max page number from the main page
@@ -111,7 +113,7 @@ def get_list_homes(bsObj):
         logging.warning(err)
         logging.info('Sleep for 30 seconds')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
-                              'Error possible due to website scraper protections', str(err))
+                                   'Error possible due to website scraper protections', str(err))
         # Sleep for 30 Seconds and Try Again
         sleep(30)
         try:
@@ -122,7 +124,7 @@ def get_list_homes(bsObj):
         except AttributeError as err:
             logging.warning('Unable to retreive the photocard tag')
             m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
-                              'Second attempt failed to retrieve property-photo-card', str(err))
+                                       'Second attempt failed to retrieve property-photo-card', str(err))
 
 
 # GET ZIP CODE----------------------------------------------------------
@@ -170,44 +172,6 @@ def get_url(home_data):
 
 
 # GET SCHOOL RANKINGS ----------------------------------------------------------
-def get_school_ranking_alternative(url):
-    'Alternative approach to obtain school ranking data'
-    url_full = 'https://www.zillow.com' + url
-    Content = urllib.request.Request(url_full, headers={
-        'authority': 'www.zillow.com',
-        'method': 'GET',
-        'path': '/homes/',
-        'scheme': 'https',
-        'user-agent':
-        ''''Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)
-        AppleWebKit/537.36 (KHTML, like Gecko)
-        Chrome/61.0.3163.100 Safari/537.36'''})
-
-    html = urlopen(Content)
-    # Create Beautifulsoup object
-    bsObj = BeautifulSoup(html.read(), 'lxml')
-
-    # Narrow down tags to the ones that hold the ratings
-    school_list = bsObj.findAll('ul', {'class':'ds-nearby-schools-list'})
-    # List of ratings
-    list_ratings = []
-
-    try:
-        ratings = school_list[0].findAll('div', {'class':'ds-school-rating'})
-        # Iterate the trags retreiving the text from each, then split to get just the rating
-        [list_ratings.append(int(x.text.split('/')[0])) for x in ratings]
-        # Return a list object with the ratings
-        return list_ratings
-    except IndexError as err:
-        logging.warning('Alternative technique generated an error')
-        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
-                                   'Error possibly due to missing data point', str(err))
-        return [0, 0, 0]
-    except ValueError as err:
-        logging.warning('Alternative technique generated an error')
-        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
-                                   'Second attempt to scrape data point failed', str(err))
-        return [0, 0, 0]
 
 def get_school_ranking(url):
     url_full = 'https://www.zillow.com' + url
@@ -225,17 +189,20 @@ def get_school_ranking(url):
     # Create Beautifulsoup object
     bsObj = BeautifulSoup(html.read(), 'lxml')
 
-    # Narrow down tags to the ones that hold the ratings
-    school_list = bsObj.findAll('div', {'class':'ds-nearby-schools-list'})
-    # List of ratings
-    list_ratings = []
-
+    # Try to Get School Ratings
     try:
-        ratings = school_list[0].findAll('div', {'class':'ds-school-rating'})
-        # Iterate the trags retreiving the text from each, then split to get just the rating
-        [list_ratings.append(int(x.text.split('/')[0])) for x in ratings]
-        # Return a list object with the ratings
+        # Get Tags Associated with Shools
+        school_list = bsObj.findAll('ul', {'class':'ds-nearby-schools-list'})
+
+        # Find All Span Tags (these tags include the ratings)
+        span = school_list[0].findAll('span')
+
+        # Create List of School values
+        list_ratings = [span[0].text, span[5].test, span[10].text]
+
+        # Return values
         return list_ratings
+
     except IndexError as err:
         logging.warning('\nSchool list => {}'.format(school_list))
         logging.warning('School ratings function generated an error => {}'.format(err))
@@ -244,21 +211,14 @@ def get_school_ranking(url):
         logging.warning('Trying a different technique\n')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
                                    'Error possibly due to missing data point', str(err))
-
-        try:
-            list_ratings = get_school_ranking_alternative(url)
-            return list_ratings
-        except AttributeError as err:
-            logging.warning('Unable to obtain school rankings. Returning school rankings = [0,0,0]\n')
-            logging.warning(err)
-            m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
-                                       'Second attempt to retrieve school rankings', str(err))
-            return [0, 0, 0]
+        # return list of all zeros
+        return [0, 0, 0]
     except ValueError as err:
         logging.warning('Get school ranking function generated and error => {}'.format(err))
         logging.warning('Returning 0,0,0')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
                                    'Second attempt to retrieve school rankings', str(err))
+        # return list of all zeros
         return [0, 0, 0]
 
 
@@ -316,10 +276,8 @@ def get_sale_asking_price(home, url):
 
 
 
-
-
-
-
-
-
-
+# Test Get School Rankings on Single Url
+'''
+url = r'/homedetails/10905-Shallowford-Rd-Roswell-GA-30075/14662538_zpid/'
+get_school_ranking(url)
+'''

@@ -13,6 +13,22 @@ import mysql.connector
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 
+# Import Project Modules
+import module1_sql_functions as m1
+
+# Instantiate Connect to MySQL --------------------------
+mydb = mysql.connector.connect(
+        host='localhost',
+        user='cc2',
+        passwd='Gsu2020!',
+        database='upwork_property_scraper',
+        auth_plugin='mysql_native_password')
+
+'''
+m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
+                          'Error possible due to website scraper protections', str(err))
+'''
+
 
 
 def get_house_data_zillow_api(address, zipcode, pull_date, asking_price):
@@ -84,9 +100,12 @@ def get_house_data_zillow_api(address, zipcode, pull_date, asking_price):
 			val_zillow_api.append(datetime.strptime(df.iloc[5, 0], '%m/%d/%Y')) # last sold date
 		# If None date append the arbitrary date of 01/01/1900
 		except ValueError as err:
-			print('Zillow api value error generated:  {}'.format(err))
-			print('Using the arbitrary date 01/01/1900\n')
-			val_zillow_api.append(datetime.strptime('01/01/1900', '%m/%d/%Y')) # last sold date
+            print('Zillow api value error generated:  {}'.format(err))
+            print('Using the arbitrary date 01/01/1900\n')
+            m1.sql_insert_warning_logs(mydb, 'module_3', 'get_house_data_zillow_api', url,
+                                        'Error generated when trying to get last sold date', str(err))
+
+            val_zillow_api.append(datetime.strptime('01/01/1900', '%m/%d/%Y')) # last sold date
 
 		val_zillow_api.append(df.iloc[6,0])                 # last sold price
 		val_zillow_api.append(df.iloc[7,0])                 # home size
@@ -118,4 +137,12 @@ def get_house_data_zillow_api(address, zipcode, pull_date, asking_price):
 
 	except ZillowError as err:
 		print('Zillow generated an error => {}'.format(err))
+
+
+
+
+
+
+
+
 

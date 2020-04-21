@@ -1,16 +1,16 @@
 Key, Value
-zillow_id,82613268
-home_type,Condominium
+zillow_id,54270843
+home_type,SingleFamily
 tax_year,2019
-tax_value,282700.0
-year_built,2006
-last_sold_date,12/18/2019
-last_sold_price,338000
-home_size,2475
-property_size,914
+tax_value,393240.0
+year_built,2000
+last_sold_date,09/23/2019
+last_sold_price,443000
+home_size,3029
+property_size,15681
 num_bedrooms,4
 num_bathrooms,4.0
-zillow_low_est,316332
-zillow_high_est,349630
-zillow_value_change,-2302
+zillow_low_est,391607
+zillow_high_est,432829
+zillow_value_change,-10060
 zillow_percentile,0
