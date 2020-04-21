@@ -12,8 +12,7 @@ import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(level=logging.CRITICAL)
 
 # IMPORT MODULES----------------------------------------------------------------------
 import module1_sql_functions as m1
@@ -57,7 +56,7 @@ def main_get_home_data(city, state):
         count_homes_scraped = 0
 
         # Loop over home tags and scrape data --------------------------------
-        if list_homes:
+        if list_homes:                                              # if list not empty
             for home in list_homes:
 
                 # Get Tag Containing Address & Zip Code

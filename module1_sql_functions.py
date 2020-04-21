@@ -40,14 +40,14 @@ def clear_table(mydb, decision='No'):
     return None
 
 
-def sql_insert_warning_logs(mydb, module, funct, url, warning, err):
+def sql_insert_warning_logs(mydb, module, funct, url, description, err):
     ''' Desc:  Insert warning logs into sql table
     '''
     pull_date = datetime.today().date()
-    vals = [url, pull_date, module, funct, warning, err]
+    vals = [url, pull_date, module, funct, description, err]
     sql_command = '''
-    INSERT INTO LOGS (
-    url_logs, pull_date, module, funct, warning, err)
+    INSERT IGNORE INTO LOGS (
+    url_logs, pull_date, module, funct, description, err)
     VALUES(%s, %s, %s, %s, %s, %s)'''
     mycursor = mydb.cursor()
     mycursor.execute(sql_command, vals)

@@ -44,6 +44,7 @@ Debugging ---------------------------------------------
 
 
 6.) Module 2:		Replace print(err) with logging
+		 	School Rankings:  scraper not working	
 
 7.) MySQL Tables:	- Need to add primary key to each table. 
 			- Probably should be URL and name of col should be diff

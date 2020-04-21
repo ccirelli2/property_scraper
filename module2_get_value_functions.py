@@ -14,19 +14,18 @@ import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 from time import sleep
 import logging
-logging.basicConfig(level=logging.WARNING)
-logging.disable(logging.WARNING)
+
 
 # Import Project Modules
 import module1_sql_functions as m1
 
 # Instantiate Connect to MySQL
 mydb = mysql.connector.connect(
-               host='localhost',
-               user='cc2',
-               passwd='Gsu2020!',
-               database='upwork_property_scraper',
-               auth_plugin='mysql_native_password')
+        host='localhost',
+        user='cc2',
+        passwd='Gsu2020!',
+        database='upwork_property_scraper',
+        auth_plugin='mysql_native_password')
 
 # GET MAX PAGE NUMBER -------------------------------------------------
 def get_max_page_num(bsObj):
@@ -95,9 +94,12 @@ def get_bsObj_main_page(city, state, page, return_value=None):
 
 # GET LIST OF HOMES --------------------------------------------------
 def get_list_homes(bsObj):
-    '''Purpose:  To get the html tags associated with the list of homes for each page.
+    '''Descr:   Obtain the photo-card object for each of the homes listed
+                on the main page.  There is import information that can be
+                scraped directly from the card like price, address, etc.
 	'''
     url = bsObj[1]
+    print(url)
     bsObj = bsObj[0]
 
     try:
@@ -105,11 +107,13 @@ def get_list_homes(bsObj):
         list_homes = photo_cards.findAll('li')
         return list_homes
     except AttributeError as err:
-        logging.warning('Attribute error generated from find photo-card request.  Possibly due to bad tag request or website scraper protections')
+        logging.warning('Attribute error generated from find property-photo-card request.  Possibly due to bad tag request or website scraper protections')
         logging.warning(err)
         logging.info('Sleep for 30 seconds')
-        sleep(5)
-
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
+                              'Error possible due to website scraper protections', str(err))
+        # Sleep for 30 Seconds and Try Again
+        sleep(30)
         try:
             logging.info('Trying a different approach')
             photo_cards = bsObj.find('ul', {'class':'photo-cards photo-cards_wow'})
@@ -117,7 +121,8 @@ def get_list_homes(bsObj):
             return list_homes
         except AttributeError as err:
             logging.warning('Unable to retreive the photocard tag')
-
+            m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
+                              'Second attempt failed to retrieve property-photo-card', str(err))
 
 
 # GET ZIP CODE----------------------------------------------------------
@@ -165,40 +170,44 @@ def get_url(home_data):
 
 
 # GET SCHOOL RANKINGS ----------------------------------------------------------
-def get_school_ranking_backup(url):
-	url_full = 'https://www.zillow.com' + url
+def get_school_ranking_alternative(url):
+    'Alternative approach to obtain school ranking data'
+    url_full = 'https://www.zillow.com' + url
+    Content = urllib.request.Request(url_full, headers={
+        'authority': 'www.zillow.com',
+        'method': 'GET',
+        'path': '/homes/',
+        'scheme': 'https',
+        'user-agent':
+        ''''Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)
+        AppleWebKit/537.36 (KHTML, like Gecko)
+        Chrome/61.0.3163.100 Safari/537.36'''})
 
-	Content = urllib.request.Request(url_full, headers={
-                       'authority': 'www.zillow.com',
-                       'method': 'GET',
-                       'path': '/homes/',
-                       'scheme': 'https',
-                       'user-agent':
-                       ''''Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)
-                        AppleWebKit/537.36 (KHTML, like Gecko)
-                        Chrome/61.0.3163.100 Safari/537.36'''})
-
-	html = urlopen(Content)
-	# Create Beautifulsoup object
-	bsObj = BeautifulSoup(html.read(), 'lxml')
+    html = urlopen(Content)
+    # Create Beautifulsoup object
+    bsObj = BeautifulSoup(html.read(), 'lxml')
 
     # Narrow down tags to the ones that hold the ratings
-	school_list = bsObj.findAll('div', {'class':'ds-nearby-schools-list'})
-	# List of ratings
-	list_ratings = []
+    school_list = bsObj.findAll('ul', {'class':'ds-nearby-schools-list'})
+    # List of ratings
+    list_ratings = []
 
-	try:
-		ratings = school_list[0].findAll('div', {'class':'ds-school-rating'})
-		# Iterate the trags retreiving the text from each, then split to get just the rating
-		[list_ratings.append(int(x.text.split('/')[0])) for x in ratings]
-		# Return a list object with the ratings
-		return list_ratings
-	except IndexError as err:
-		logging.warning('Alternative technique generated an error')
-		return [0,0,0]
-	except ValueError as err:
-		logging.warning('Alternative technique generated an error')
-		return [0,0,0]
+    try:
+        ratings = school_list[0].findAll('div', {'class':'ds-school-rating'})
+        # Iterate the trags retreiving the text from each, then split to get just the rating
+        [list_ratings.append(int(x.text.split('/')[0])) for x in ratings]
+        # Return a list object with the ratings
+        return list_ratings
+    except IndexError as err:
+        logging.warning('Alternative technique generated an error')
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
+                                   'Error possibly due to missing data point', str(err))
+        return [0, 0, 0]
+    except ValueError as err:
+        logging.warning('Alternative technique generated an error')
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
+                                   'Second attempt to scrape data point failed', str(err))
+        return [0, 0, 0]
 
 def get_school_ranking(url):
     url_full = 'https://www.zillow.com' + url
@@ -233,39 +242,43 @@ def get_school_ranking(url):
         logging.warning('Url that generated the error => {}'.format(url_full))
         logging.warning(err)
         logging.warning('Trying a different technique\n')
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
+                                   'Error possibly due to missing data point', str(err))
 
         try:
-            list_ratings = get_school_ranking_backup(url)
+            list_ratings = get_school_ranking_alternative(url)
             return list_ratings
         except AttributeError as err:
             logging.warning('Unable to obtain school rankings. Returning school rankings = [0,0,0]\n')
             logging.warning(err)
+            m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
+                                       'Second attempt to retrieve school rankings', str(err))
             return [0, 0, 0]
     except ValueError as err:
-        print('Get school ranking function generated and error => {}'.format(err))
-        print('Returning 0,0,0')
+        logging.warning('Get school ranking function generated and error => {}'.format(err))
+        logging.warning('Returning 0,0,0')
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
+                                   'Second attempt to retrieve school rankings', str(err))
         return [0, 0, 0]
 
 
 
-# GET ASKING PRICE-------------------------------------------------------------------
 def get_sale_asking_price(home, url):
     '''
     Purpose:	Get the asking price for the house from the photo tag
-    Input:		The input value is the individual home tag
+    home:		The input value is the individual home tag
+    url:        used for logging
     This function sits within the "for home in list_homes" loop.
     Output:		Integer value for asking price
     '''
     # Test if we can find the article tag
+
     try:
-        test = home.find('article')
-        # If this tag is not none, lets try to get the a tag within which sits the list price
-        if test != None:
-            article = test.a
-            list_price = article.find('div', {'class':'list-card-price'})\
-						.text.replace('$','').replace(',','')
-            # Return asking price as an integer
-            return int(list_price)
+        list_price = home.find('div', {'class':'list-card-price'})\
+                    .text.replace('$','').replace(',','')
+
+        # Return asking price as an integer
+        return int(list_price)
 
     # Except an attribute error where no tag is found
     except AttributeError as err:
@@ -307,12 +320,6 @@ def get_sale_asking_price(home, url):
 
 
 
-
-# TEST GET BSOJB & GET LIST OF HOMES
-'''
-test_url = '/homedetails/130-Roswell-Commons-Way-Roswell-GA-30076/14669487_zpid/'
-print(get_school_ranking(test_url))
-'''
 
 
 
