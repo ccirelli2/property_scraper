@@ -1,31 +1,27 @@
 # Description -----------------------------------------------------
 Upwork Contract:  Create web scraper to obtain real estate listing in Colorado. 
 
-# Implementation --------------------------------------------------
-Python
+# Milestones ------------------------------------------------------
+- Due Aril 24th		Submission of Code & Data 
+- Due April 27th	Setup mysql database
+- Due April 30th	Walk client through code
+
+# Dependencies --------------------------------------------------
+- OS		Windows
+- Language	Python
+- Database	MySQL
+- APIs		Zillow api (requires user credentials)
+
+# Output Fields - Need to be Coded --------------------------------
+- HOA Fees
+- Rent Estimate
+- Annual Taxes
 
 # Output Fields----------------------------------------------------
-address, 
-zip code, 
-listing pricing, 
-number of beds, 
-number of baths, 
-square footage, 
-HOA fees, 
-rent estimate, 
-annual taxes.
 
-# Storage ---------------------------------------------------------
-Utilize MySQL
 
-# Milestones ------------------------------------------------------
 
-1.) Due Aril 24th
-	Submission of Code & Data 
-2.) Due April 27th
-    Setup mysql database=
-3.) Due April 30th
-    Walk client through code
+
 
 Debugging ---------------------------------------------
 
@@ -38,17 +34,17 @@ Debugging ---------------------------------------------
 			Add User Input function to select logging level
 			Set up sql table to capture logs
 
-
 5.) Main Script:	Move main_get_home_data to another file
 			What if the user puts in an invalide city + state combo?
 
 
 6.) Module 2:		Replace print(err) with logging
-		 	School Rankings:  probably should get all links to the 
-			web page that has the ratings and from there scrape
-			the data
 
-.) Zillow Data		Is zillow percentile pulling correctly?
+
+7.) School Rankings:  	Need to replace with link to provider of information and
+			scrape data from there. 
+
+.) Zillow Data		- Is zillow percentile pulling correctly?
 
 
 7.) MySQL Tables:	- Need to add primary key to each table. 

@@ -11,7 +11,6 @@ import random
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 import logging
-
 logging.basicConfig(level=logging.CRITICAL)
 
 # IMPORT MODULES----------------------------------------------------------------------
@@ -23,11 +22,11 @@ import module4_url_filters as m4
 
 # INSTANTIATE CONNECTION TO MYSQL DATABASE--------------------------------------------
 mydb = mysql.connector.connect(
-                host='localhost',
-                user='cc2',
-                passwd='Gsu2020!',
-                database='upwork_property_scraper',
-                auth_plugin='mysql_native_password')
+        host='localhost',
+        user='cc2',
+        passwd='Gsu2020!',
+        database='upwork_property_scraper',
+        auth_plugin='mysql_native_password')
 
 
 # SCRAPER FUNCTION -----------------------------------------------------------
@@ -80,18 +79,20 @@ def main_get_home_data(city, state):
 
                     # Get Zipcode
                     zip_code = m2.get_zip_code(clean_house_tags)
+
                     # Get Address
                     address = m2.get_address(clean_house_tags)
-                    # Insert Address Fields into Address Table
+
+                    # Insert Location
                     val_addresses = [address, state, zip_code, city, pull_date, url]
                     m1.sql_insert_function_addresses(mydb, val_addresses)
 
-                    # Get & Insert Fields From Zillow API ------------------------------
+                    # Get Zillow Data-------------------- ------------------------------
                     val_zillow_api_data = m3.get_house_data_zillow_api(address, zip_code,
-                                                                       pull_date, asking_price)
+                                                                       pull_date, asking_price, url)
                     m1.sql_insert_function_zillow_api_data(mydb, val_zillow_api_data)
 
-                    # Get & Insert School Ranking Info ---------------------------------
+                    # Get School Ranking Data ------------------------------------------
                     school_rankings = m2.get_school_ranking(url)
                     m1.sql_insert_function_schools(mydb, school_rankings, address,
                                                    pull_date, url)
@@ -103,9 +104,9 @@ def main_get_home_data(city, state):
 
 
             # Generate Random Sleep Period
-            logging.info('Data successfully scraped for page {}'.format(page_num))
+            print('Data successfully scraped for page {}'.format(page_num))
             sleep_seconds = random.randint(5, 10)
-            logging.info('Sleeping for {} seconds\n'.format(sleep_seconds))
+            print('Sleeping for {} seconds\n'.format(sleep_seconds))
             sleep(sleep_seconds)
 
         # No Homes Found
@@ -113,18 +114,6 @@ def main_get_home_data(city, state):
             logging.warning('No homes found in search.  Ending scraper program')
 
     return None
-
-
-# USER INPUT---------------------------------------------------------------------
-
-
-# Clear Existing Table Data:
-#clear_tables_decision = input('''Do you want to delete the data from the following tables?
-#	1. Addresses,
-#	2. House Details,
-#	3. Schools
-#	Indicate Yes or No:  ''')
-#m1.clear_table(mydb, clear_tables_decision)
 
 
 # MAIN FUNCTION----------------------------------------------------------------
