@@ -1,29 +1,58 @@
 # Description -----------------------------------------------------
-Upwork Contract:  Create web scraper to obtain real estate listing in Colorado. 
+This program is for an upwork contract to create web scraper to obtain 
+real estate listing in Colorado.  Below are the milestones of the 
+project. 
 
-# Milestones ------------------------------------------------------
 - Due Aril 24th		Submission of Code & Data 
 - Due April 27th	Setup mysql database
 - Due April 30th	Walk client through code
 
-# Dependencies --------------------------------------------------
-- OS		Windows
-- Language	Python
-- Database	MySQL
-- APIs		Zillow api (requires user credentials)
 
-# Output Fields - Need to be Coded --------------------------------
+# Setup & Dependencies --------------------------------------------
+- OS		Ubuntu 19	
+
+- Python	This program was written using Python 3.7.
+		See requirements file for installation of required
+		python modules.  Python 3.7 and all modules must be
+		installed before running any of the scripts associated
+		with this program.
+
+
+- Database:	This program requires a local instance of MySQL to
+		be installed and a username and password to already
+		have been created. 
+		 
+		Please run the mysql_scraper_schema.sql file in order to create
+		the required database and tables.  
+
+
+- APIs		This program utilizes the zillow api.  For this program
+		to run properly a user id and credentials for this api
+		are required. 
+
+
+
+# Scraper output fields -------------------------------------------
 - HOA Fees
 - Rent Estimate
 - Annual Taxes
 
-# Output Fields----------------------------------------------------
+
+# Disclosures & Legal Responsibility ------------------------------ 
+1.)	The user of this program acknowledges and agrees that they alone
+	take full responsibility and assume all legal liability for the use
+	of this program and agree to fully indemnify the programmer of all
+	defense costs and liability for their use of this program. 
+2.) The user agrees to hold harmless and seek no legal recourse for any 
+    destruction to personal property or information that the use of this 
+	program may cause to the user. 
+3.) The programmer provides no gaurantees that this program will continue
+    to work after the initial installation and setup.
+
+	
 
 
-
-
-
-Debugging ---------------------------------------------
+Debugging ---------------------------------------------------------
 
 1.) README File:        Redo
 2.) Repository:         Change all file names.
@@ -51,3 +80,8 @@ Debugging ---------------------------------------------
 			- Probably should be URL and name of col should be diff
 			  for each table. 
 			- pull_date needs to be changed to a date object
+
+
+
+
+

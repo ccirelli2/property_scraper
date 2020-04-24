@@ -10,14 +10,15 @@ from datetime import datetime
 import random
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
+from time import sleep
 import logging
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 
 # IMPORT MODULES----------------------------------------------------------------------
-import module1_sql_functions as m1
-import module2_get_value_functions as m2
-import module3_zillow_api as m3
-import module4_url_filters as m4
+import sql_functions as m1
+import scraper_functions as m2
+import zillow_api as m3
+import url_filters as m4
 
 
 # INSTANTIATE CONNECTION TO MYSQL DATABASE--------------------------------------------
@@ -32,8 +33,11 @@ mydb = mysql.connector.connect(
 # SCRAPER FUNCTION -----------------------------------------------------------
 def main_get_home_data(city, state):
 
+    # Get Beautiful Soup Object
+    bsObj = m2.get_bsObj_main_page(city, state, 1)
+
     # Get Max Page Number
-    max_page_num = m2.get_bsObj_main_page(city, state, 1, 'max_page_num')
+    max_page_num = m2.get_max_page_num(bsObj)
 
     # Iterate Over Pages (max_page_num because its up to but not including)
     for page_num in range(1, max_page_num + 1):
@@ -120,37 +124,26 @@ def main_get_home_data(city, state):
 
 logging.info('\n ************************ INITIALIZING SCRAPER ******************************\n')
 
+
 # Define Run-Type:
 def run_scraper():
-    # Choose Run-Type
-    print('How do you wan to run the scraper, for an individual state and city or all cities in a given state?')
-    run_type = input('Acceptable responses => indv or all: ')
+    # Step 1: Gather Information
+    logging.info('Step 1: gather state & city information')
+    state= input('For which state would you like to gather information (Ex: GA) ? ')
+    city= input('For which city would you like to gather information (Ex: Roswell)? \n')
 
-    # Run For Single State + City
-    if run_type == 'indv':
-        # User Input Data:
-        State = input('Enter State (ex: GA)    : ')
-        City = input('Enter City (ex: Roswell): ')
+    # Step 2: Check Scraper Protections
+    p_status = m2.test_scraper_protections(state, city, count=1, pprint=True)
+
+    # If Scraper Protections Off
+    if p_status:
 
         # Run Scraper for Selected City/State
-        main_get_home_data(City, State)
-
-    # Run For State + List of Cities
-    elif run_type == 'all':
-        # Obtain list of cities from MySQL Table
-        df_cities = list(m1.get_ga_muni_data(mydb)['NAME'])
-        # Iterate Cities
-        for city in df_cities:
-            # Scrape data
-            main_get_home_data(city, 'GA')
-            logging.info('Scraping data for city => {}'.format())
+        main_get_home_data(city, state)
     else:
-        logging.warning('Input value incorrect. Must be either "indv or all"')
+        pass
 
 run_scraper()
-
-# NOTES_ ----------------------------------------------------------------------
-'''Add filter for home types'''
 
 
 
