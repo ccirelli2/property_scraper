@@ -22,9 +22,9 @@ import sql_functions as m1
 # Instantiate Connect to MySQL ---------------------------------------
 mydb = mysql.connector.connect(
         host='localhost',
-        user='cc2',
-        passwd='Gsu2020!',
-        database='upwork_property_scraper',
+        user= input('Username => '),
+        passwd= input('Password => '),
+        database='upwork_test_db',
         auth_plugin='mysql_native_password')
 
 

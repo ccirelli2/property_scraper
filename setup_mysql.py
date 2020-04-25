@@ -1,5 +1,6 @@
 import mysql.connector
 import logging
+import os
 from time import sleep
 import sql_functions as f1
 import subprocess
@@ -95,20 +96,26 @@ def create_db(username, password, database):
 
 
 
-def create_table_addresses(username, password, db_name):
+def import_sql_schema(username, password):
 
     try:
-        logging.info('Trying connection to datbase -> {}'.format(db_name))
+        logging.info('Trying connection to datbase -> upwork_test_db')
         conn = mysql.connector.connect(
         host='localhost',
         user=username,
         passwd=password,
-        database=db_name,
+        database='upwork_test_db',
         auth_plugin='mysql_native_password')
-        logging.info('Connection successfully established to db.  Procceding to create tables')
+        logging.info('Connection successfully established to db.  Procceding to import schema')
+
+        # Use Subprocess to execute import of schema
+        os.system('mysql -u root -p upwork_test_db < mysql_scraper_schema.sql')
+        logging.info('Schema imported correctly')
+        # Add a function to test if schema created correctly
+
 
     except mysql.connector.errors.DatabaseError as err:
-        logging.info('Unable to connect to database {}'.format(db_name))
+        logging.info('Unable to connect to database => upwork_test_db')
         logging.info('Please check to see that database was created correctly')
         logging.warning(err)
 
@@ -125,11 +132,8 @@ connection_status = try2connect_mysql(username, password)
 if connection_status:
     # Create Database
     create_db(username, password, 'upwork_test_db')
-
-    # Create Tables
-    create_table_addresses(username, password, 'upwork_test_db')
-
-
+    # Import Schema
+    import_sql_schema(username, password)
 
 
 
