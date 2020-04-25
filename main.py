@@ -24,17 +24,18 @@ import url_filters as m4
 # INSTANTIATE CONNECTION TO MYSQL DATABASE--------------------------------------------
 mydb = mysql.connector.connect(
         host='localhost',
-        user= input('Username => ',
-        passwd= input('Password => ',
+        user=input('Username => '),
+        passwd= input('Password => '),
         database='upwork_test_db',
         auth_plugin='mysql_native_password')
 
-
 # SCRAPER FUNCTION -----------------------------------------------------------
+
+
 def main_get_home_data(city, state):
 
     # Get Beautiful Soup Object
-    bsObj = m2.get_bsObj_main_page(city, state, 1)
+    bsObj, url = m2.get_bsObj_main_page(city, state, 1)
 
     # Get Max Page Number
     max_page_num = m2.get_max_page_num(bsObj)
@@ -53,7 +54,7 @@ def main_get_home_data(city, state):
         bsObj = m2.get_bsObj_main_page(city, state, page_num)
 
         # Get List of Houses (Photo-cards) for each page)
-        list_homes = m2.get_list_homes(bsObj)
+        list_homes = m2.get_list_homes(bsObj, url)
 
 		# Count Homes Scraped Obj
         count_homes_scraped = 0
@@ -134,9 +135,11 @@ def run_scraper():
 
     # Step 2: Check Scraper Protections
     p_status = m2.test_scraper_protections(state, city, count=1, pprint=True)
+    
+    print(p_status)
 
     # If Scraper Protections Off
-    if p_status:
+    if p_status == True:
 
         # Run Scraper for Selected City/State
         main_get_home_data(city, state)

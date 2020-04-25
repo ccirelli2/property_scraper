@@ -18,6 +18,10 @@ import logging
 
 # Import Project Modules ---------------------------------------------
 import sql_functions as m1
+import bot_protections as m2
+
+
+
 
 # Instantiate Connect to MySQL ---------------------------------------
 mydb = mysql.connector.connect(
@@ -44,14 +48,29 @@ def get_max_page_num(bsObj):
        return a string that looks like 'totalPages":18'
     '''
     regex = re.compile('totalPages":[0-9][0-9]')
-    re_search = re.findall(regex, links_pages)[0]
+    
+    # Try to get total page numbers 
+    try:
+        re_search = re.findall(regex, links_pages)[0]
+        # Get Number after colon from re_search result return ['##']
+        regex_2 = re.compile('[0-9][0-9]')
+        re_search = re.findall(regex_2, re_search)
+        # Result
+        return int(re_search[0])
+    
+    except IndexError as err:
+        logging.info('max page number generated an error')
+        logging.warning(err)
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_max_page_num', 'url',
+                'Attempt to obtain max page number failed. Returning max page num = 20', str(err))
+        return 20
 
-    # Get Number after colon from re_search result return ['##']
-    regex_2 = re.compile('[0-9][0-9]')
-    re_search = re.findall(regex_2, re_search)
-
-    # Result
-    return re_search[0]
+    except TypeError as err:
+        logging.info('max page number generated an error')
+        logging.warning(err)
+        m1.sql_insert_warning_logs(mydb, 'module_1', 'get_max_page_num', 'url',
+                'Attempt to obtain max page number failed.  Returning max page num = 20', str(err))
+        return 20
 
 
 # GET BEAUTIFUL SOUP OBJECT OF PAGE OR TOTAL NUMBER OF PAGES TO SCRAPE--------------
@@ -67,16 +86,11 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     # Define url object
     url = 'https://www.zillow.com/homes/for_sale/{},-{}_rb/{}/'.format(city, state, page)
 
-     # Generate the url request with zillow headings
-    Content = urllib.request.Request(url, headers={
-        'authority': 'www.zillow.com',
-        'method': 'GET',
-        'path': '/homes/',
-        'scheme': 'https',
-        'user-agent':
-        ''''Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)
-        AppleWebKit/537.36 (KHTML, like Gecko)
-        Chrome/61.0.3163.100 Safari/537.36'''})
+    # Generate Random Header
+    random_header = m2.generate_ran_headers()
+
+    # Generate the url request with zillow headings
+    Content = urllib.request.Request(url, headers= random_header)
 
     html = urlopen(Content)
     # Create Beautifulsoup object
@@ -87,7 +101,7 @@ def get_bsObj_main_page(city, state, page, pprint=False):
         print(bsObj.prettify())
 
     # Return bsObj
-    return bsObj
+    return bsObj, url
 
 
 
@@ -107,7 +121,6 @@ def test_scraper_protections(state, city, count=1, pprint=False):
 
     # Duration
     rand_dur = random.randint(10,30)
-
 
     # Check for web scraper protections
     logging.info('Iteration {}, testing web page scraper protections'.format(count))
@@ -132,18 +145,19 @@ def test_scraper_protections(state, city, count=1, pprint=False):
             return True
     else:
         logging.warning('Unable to pass scraper protections. Try again later')
+        return False
 
 
 
 
 # GET LIST OF HOMES --------------------------------------------------
-def get_list_homes(bsObj):
+def get_list_homes(bsObj, url):
     '''Descr:   Obtain the photo-card object for each of the homes listed
                 on the main page.  There is import information that can be
                 scraped directly from the card like price, address, etc.
 	'''
-    url = bsObj[1]
-    bsObj = bsObj[0]
+
+    print(bsObj)
 
     try:
         photo_cards = bsObj.find('ul', {'class':'photo-cards'})
