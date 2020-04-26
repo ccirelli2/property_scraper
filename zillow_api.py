@@ -12,6 +12,8 @@ import random
 import mysql.connector
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
+from settings import *
+
 
 # Import Project Modules
 import sql_functions as m1
@@ -19,8 +21,8 @@ import sql_functions as m1
 # Instantiate Connect to MySQL --------------------------
 mydb = mysql.connector.connect(
         host='localhost',
-        user= input('Username => '),
-        passwd= input('Password => '),
+        user= user,
+        passwd= password,
         database='upwork_test_db',
         auth_plugin='mysql_native_password')
 

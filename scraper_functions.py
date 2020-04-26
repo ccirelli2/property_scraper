@@ -14,20 +14,18 @@ import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 from time import sleep
 import logging
-
+from settings import *
 
 # Import Project Modules ---------------------------------------------
 import sql_functions as m1
 import bot_protections as m2
 
 
-
-
 # Instantiate Connect to MySQL ---------------------------------------
 mydb = mysql.connector.connect(
         host='localhost',
-        user= input('Username => '),
-        passwd= input('Password => '),
+        user= user,
+        passwd= password,
         database='upwork_test_db',
         auth_plugin='mysql_native_password')
 
@@ -42,6 +40,9 @@ def get_max_page_num(bsObj):
 
     # Get Tag Containing totalPages value
     links_pages = str(bsObj.find('script', {'data-zrr-shared-data-key':'mobileSearchPageStore'}))
+
+    #print('Bs Object', bsObj)
+    #print('Page Links', links_pages)
 
     # Use Regex Statement to Obtain phrase "total_Pages:##"
     '''Assuming totalPages exists on the first page, re_search will
@@ -86,7 +87,7 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     # Define url object
     url = 'https://www.zillow.com/homes/for_sale/{},-{}_rb/{}/'.format(city, state, page)
 
-    # Generate Random Header
+    # Generate Random Header (serves to fake bot protections)
     random_header = m2.generate_ran_headers()
 
     # Generate the url request with zillow headings
@@ -96,6 +97,8 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     # Create Beautifulsoup object
     bsObj = BeautifulSoup(html.read(), 'lxml')
 
+    print(bsObj.prettify())
+
     # Logging
     if pprint==True:
         print(bsObj.prettify())
@@ -104,60 +107,12 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     return bsObj, url
 
 
-
-
-def test_scraper_protections(state, city, count=1, pprint=False):
-    ''' Desc:  The purpose is to test the scraping protections of the
-                web page before initializing the scraper.
-                This function will run for 10 iterations before it will
-                stop.
-    '''
-    # Logging
-    if count==1:
-        logging.info('\nInitializing testing scraper protections\n')
-
-    # Statement
-    PHRASE = "Please verify you're a human to continue"
-
-    # Duration
-    rand_dur = random.randint(10,30)
-
-    # Check for web scraper protections
-    logging.info('Iteration {}, testing web page scraper protections'.format(count))
-    bsObj = get_bsObj_main_page(city, state, 1)
-    bsObj_str = str(bsObj)
-
-    # Determine when to end
-    if count < 10:
-
-        # Check if protections blocking scraper
-        if PHRASE in bsObj_str:
-            logging.info('Web page protections are blocking the scraper')
-            logging.info('Sleeping for {} seconds'.format(rand_dur))
-            sleep(rand_dur)
-            # Increase Count
-            count += 1
-            # Rerun scraper protection function
-            test_scraper_protections(state, city, count=count)
-
-        else:
-            logging.info('Scraper protection test passed.  Initiate scraper')
-            return True
-    else:
-        logging.warning('Unable to pass scraper protections. Try again later')
-        return False
-
-
-
-
 # GET LIST OF HOMES --------------------------------------------------
 def get_list_homes(bsObj, url):
     '''Descr:   Obtain the photo-card object for each of the homes listed
                 on the main page.  There is import information that can be
                 scraped directly from the card like price, address, etc.
 	'''
-
-    print(bsObj)
 
     try:
         photo_cards = bsObj.find('ul', {'class':'photo-cards'})
@@ -328,11 +283,92 @@ def get_sale_asking_price(home, url):
 
 
 
+def main_get_home_data(city, state, bsObj, url):
+
+    print('Entered main function')
+    print('Beautiful Soup Object => ', bsObj.prettify()) 
+
+    # Get Max Page Number
+    max_page_num = get_max_page_num(bsObj)
+
+    # Iterate Over Pages (max_page_num because its up to but not including)
+    for page_num in range(1, max_page_num + 1):
+
+        # User Info
+        print('Scraping page {} of {} -----------------------------------------'\
+                                .format(page_num, max_page_num))
+
+        # Generate Datetime Object
+        pull_date = datetime.today().date()
+
+        # Get Beautiful Soup Object of Page N that contain links to each home listing
+        bsObj = get_bsObj_main_page(city, state, page_num)
+
+        # Get List of Houses (Photo-cards) for each page)
+        list_homes = get_list_homes(bsObj, url)
+
+                # Count Homes Scraped Obj
+        count_homes_scraped = 0
+
+        # Loop over home tags and scrape data --------------------------------
+        if list_homes:
+            
+            for home in list_homes:
+
+                # Get Tag Containing Address & Zip Code
+                clean_house_tags = clean_house_tags_4_address_zipcode_scrape(home)
+
+                # Function may return null obj. Pass if None.
+                if not clean_house_tags:
+                    logging.info('No house tags found')
+                
+                else:
+                    # Get Url
+                    url = get_url(home)
+
+                    # Get Home Details -------------------------------------------
+
+                    # Get Asking Price
+                    asking_price = get_sale_asking_price(home, url)
+
+                    # Num home object
+                    total_homes_on_page = len(list_homes)
+
+                    # Get Zipcode
+                    zip_code = get_zip_code(clean_house_tags)
+
+                    # Get Address
+                    address = get_address(clean_house_tags)
+
+                    # Insert Location
+                    val_addresses = [address, state, zip_code, city, pull_date, url]
+                    m1.sql_insert_function_addresses(mydb, val_addresses)
+
+                    # Get Zillow Data-------------------- ------------------------------
+                    val_zillow_api_data = m3.get_house_data_zillow_api(address, zip_code,
+                                                pull_date, asking_price, url)
+                    m1.sql_insert_function_zillow_api_data(mydb, val_zillow_api_data)
+
+                    # Get School Ranking Data ------------------------------------------
+                    school_rankings = get_school_ranking(url)
+                    m1.sql_insert_function_schools(mydb, school_rankings, address,
+                                                   pull_date, url)
+
+                    # Increment Num homes
+                    print('{} of {} home data scraped'.format(
+                        count_homes_scraped, total_homes_on_page))
+                    count_homes_scraped += 1
 
 
+            # Generate Random Sleep Period
+            print('Data successfully scraped for page {}'.format(page_num))
+            sleep_seconds = random.randint(5, 10)
+            print('Sleeping for {} seconds\n'.format(sleep_seconds))
+            sleep(sleep_seconds)
 
-# Test Get School Rankings on Single Url
-'''
-url = r'/homedetails/10905-Shallowford-Rd-Roswell-GA-30075/14662538_zpid/'
-get_school_ranking(url)
-'''
+        # No Homes Found
+        else:
+            logging.warning('No homes found in search.  Ending scraper program')
+
+    return None
+
