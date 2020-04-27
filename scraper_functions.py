@@ -97,8 +97,6 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     # Create Beautifulsoup object
     bsObj = BeautifulSoup(html.read(), 'lxml')
 
-    print(bsObj.prettify())
-
     # Logging
     if pprint==True:
         print(bsObj.prettify())
@@ -285,8 +283,6 @@ def get_sale_asking_price(home, url):
 
 def main_get_home_data(city, state, bsObj, url):
 
-    print('Entered main function')
-    print('Beautiful Soup Object => ', bsObj.prettify()) 
 
     # Get Max Page Number
     max_page_num = get_max_page_num(bsObj)

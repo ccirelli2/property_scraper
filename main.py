@@ -48,21 +48,26 @@ def run_scraper(state=None, city=None, count=1):
         city= input('For which city would you like to gather information (Ex: Roswell)? \n')
 
     # Statement
-    PHRASE = "Please verify you're a human to continue"
+    PHRASE = "human to continue"
 
     # Duration
-    rand_dur = random.randint(10,30)
+    rand_dur = random.randint(5,15)
 
     # Check for web scraper protections
     logging.info('Iteration {}, testing web page scraper protections'.format(count))
     bsObj, url = m2.get_bsObj_main_page(city, state, 1)
     bsObj_str = str(bsObj)
 
+
+    print(bsObj, '***********************************************************************')
+    print(len(bsObj_str))
+
+
     # Run 10 Iterations of Test 
     if count < 10:
 
         # Check if protections blocking scraper
-        if PHRASE in bsObj_str:
+        if PHRASE in bsObj_str or len(bsObj_str) < 1:
             logging.info('Web page protections are blocking the scraper')
             logging.info('Sleeping for {} seconds'.format(rand_dur))
             sleep(rand_dur)
@@ -74,7 +79,7 @@ def run_scraper(state=None, city=None, count=1):
         # If the phrase is not found, fun main scraper function
         else:
             logging.info('Scraper protection test passed.  Initiate scraper')
-        
+            print('####################', bsObj) 
             # Run Scraper for Selected City/State
             m2.main_get_home_data(city, state, bsObj, url)
 
