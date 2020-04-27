@@ -25,9 +25,9 @@ def generate_ran_headers():
 
     # Build Header
     h = {  'Referer'        : '{}'.format(Referer),
-            'Accept'        : "test/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", 
-            'Accept-Encoding':'{}'.format(encoding), 
-            'Accept-Language':'en-gb', 
+           'Accept'        : "test/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", 
+           'Accept-Encoding':'{}'.format(encoding), 
+           'Accept-Language':'en-gb', 
             'authority'     : 'www.zillow.com',
             'method'        : 'GET',
             'path'          : '/homes/',

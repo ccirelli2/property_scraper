@@ -32,6 +32,39 @@ mydb = mysql.connector.connect(
 
 # Functions -----------------------------------------------------------
 
+
+
+# GET BEAUTIFUL SOUP OBJECT OF PAGE OR TOTAL NUMBER OF PAGES TO SCRAPE--------------
+def get_bsObj_main_page(city, state, page, pprint=False):
+    '''
+    Purpose:    Obtain the bsObj for the main page where the list of houses are located.
+    Input:      Seach criteria includes the city and state where the house is located
+                The purpose of the page input is to iterate each of the pages to scrape
+                more housing data.
+    **Note:     We should expand the search criteria to include other limiting fields.
+    Output:     The user may chose to output the max page number from the page
+                or return the bsObj of the page '''
+    # Define url object
+    url = 'https://www.zillow.com/homes/{},-{}_rb/'.format(city, state)
+
+    # Generate Random Header (serves to fake bot protections)
+    random_header = m2.generate_ran_headers()
+
+    # Generate the url request with zillow headings
+    Content = urllib.request.Request(url, headers= random_header)
+
+    html = urlopen(Content)
+    # Create Beautifulsoup object
+    bsObj = BeautifulSoup(html.read(), 'lxml')
+
+    # Logging
+    if pprint==True:
+        print(bsObj.prettify())
+
+    # Return bsObj
+    return bsObj, url
+
+
 def get_max_page_num(bsObj):
     '''
     Purpose:    Get the max page number from the main page
@@ -72,38 +105,6 @@ def get_max_page_num(bsObj):
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_max_page_num', 'url',
                 'Attempt to obtain max page number failed.  Returning max page num = 20', str(err))
         return 20
-
-
-# GET BEAUTIFUL SOUP OBJECT OF PAGE OR TOTAL NUMBER OF PAGES TO SCRAPE--------------
-def get_bsObj_main_page(city, state, page, pprint=False):
-    '''
-    Purpose:    Obtain the bsObj for the main page where the list of houses are located.
-    Input:      Seach criteria includes the city and state where the house is located
-                The purpose of the page input is to iterate each of the pages to scrape
-                more housing data.
-    **Note:     We should expand the search criteria to include other limiting fields.
-    Output:     The user may chose to output the max page number from the page
-                or return the bsObj of the page '''
-    # Define url object
-    url = 'https://www.zillow.com/homes/for_sale/{},-{}_rb/{}/'.format(city, state, page)
-
-    # Generate Random Header (serves to fake bot protections)
-    random_header = m2.generate_ran_headers()
-
-    # Generate the url request with zillow headings
-    Content = urllib.request.Request(url, headers= random_header)
-
-    html = urlopen(Content)
-    # Create Beautifulsoup object
-    bsObj = BeautifulSoup(html.read(), 'lxml')
-
-    # Logging
-    if pprint==True:
-        print(bsObj.prettify())
-
-    # Return bsObj
-    return bsObj, url
-
 
 # GET LIST OF HOMES --------------------------------------------------
 def get_list_homes(bsObj, url):

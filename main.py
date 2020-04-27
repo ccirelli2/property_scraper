@@ -45,31 +45,26 @@ def run_scraper(state=None, city=None, count=1):
         # Step 1: Gather Information
         logging.info('Step 1: gather state & city information')
         state= input('For which state would you like to gather information (Ex: GA) ? ')
-        city= input('For which city would you like to gather information (Ex: Roswell)? \n')
+        city= input('For which city would you like to gather information (must include - between names, ex: Johns-Creek)? \n')
 
     # Statement
     PHRASE = "human to continue"
 
     # Duration
-    rand_dur = random.randint(5,15)
+    rand_dur = random.randint(5,7)
 
     # Check for web scraper protections
     logging.info('Iteration {}, testing web page scraper protections'.format(count))
     bsObj, url = m2.get_bsObj_main_page(city, state, 1)
     bsObj_str = str(bsObj)
 
-
-    print(bsObj, '***********************************************************************')
-    print(len(bsObj_str))
-
-
     # Run 10 Iterations of Test 
-    if count < 10:
+    if count < 100:
 
         # Check if protections blocking scraper
         if PHRASE in bsObj_str or len(bsObj_str) < 1:
             logging.info('Web page protections are blocking the scraper')
-            logging.info('Sleeping for {} seconds'.format(rand_dur))
+            logging.info('Sleeping for {} seconds\n'.format(rand_dur))
             sleep(rand_dur)
             # Increase Count
             count += 1
