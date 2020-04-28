@@ -36,9 +36,9 @@ m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
 def get_house_data_zillow_api(address, zipcode, pull_date, asking_price, url):
     try:
         # Instantiate connection to zillow database
-        web_service_id  = 'X1-ZWz1h90xzgg45n_2kpit'
-        documentation   = 'https://pypi.org/project/pyzillow/'
-        d2              = 'https://anchetawern.github.io/blog/2014/03/20/getting-started-with-zillow-api/'
+        web_service_id  = ''
+        documentation   = ''
+        d2              = ''
         zillow_data = ZillowWrapper(web_service_id)
 
         # Start Search

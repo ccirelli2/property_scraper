@@ -1,5 +1,5 @@
-user = 'root' 
-password = 'Gsu2020!'
+user = '' 
+password = ''
 
 
 
