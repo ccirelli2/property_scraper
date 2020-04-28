@@ -37,11 +37,11 @@ mydb = mysql.connector.connect(
 logging.info('\n ************************ INITIALIZING SCRAPER *****************************\n')
 
 def run_scraper(state=None, city=None, count=1):
-    
+
     # If First Iteration - Gather Info
     if count==1:
         logging.info('\nInitializing test for scraper protections\n')
-        
+
         # Step 1: Gather Information
         logging.info('Step 1: gather state & city information')
         state= input('For which state would you like to gather information (Ex: GA) ? ')
@@ -58,7 +58,7 @@ def run_scraper(state=None, city=None, count=1):
     bsObj, url = m2.get_bsObj_main_page(city, state, 1)
     bsObj_str = str(bsObj)
 
-    # Run 10 Iterations of Test 
+    # Run 10 Iterations of Test
     if count < 100:
 
         # Check if protections blocking scraper
@@ -74,14 +74,13 @@ def run_scraper(state=None, city=None, count=1):
         # If the phrase is not found, fun main scraper function
         else:
             logging.info('Scraper protection test passed.  Initiate scraper')
-            print('####################', bsObj) 
             # Run Scraper for Selected City/State
             m2.main_get_home_data(city, state, bsObj, url)
 
     else:
         logging.warning('Unable to pass scraper protections. Try again later')
         return None
- 
+
 
 
 
