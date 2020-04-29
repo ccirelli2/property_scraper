@@ -11,7 +11,7 @@ def generate_ran_headers():
             'https://www.atlantafinehomes.com/eng', 'https://www.movoto.com/', 
             'https://www.coldwellbankerhomes.com/']
     
-    encoding = ['br', 'gzip', 'deflate'] 
+    encoding = ['br', 'gzip', 'deflate', 'sdch'] 
 
     # Generate random number from 0-3
     ref_randint = random.randint(0, 4)
@@ -25,19 +25,21 @@ def generate_ran_headers():
 
     # Build Header
     h = {  'Referer'        : '{}'.format(Referer),
-           'Accept'        : "test/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", 
+           'Accept'         : "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", 
            'Accept-Encoding':'{}'.format(encoding), 
-           'Accept-Language':'en-gb', 
+           'Accept-Language':'en-GB, en;q=0.8, en-US;q=0.6,ml;q=0.4',
+           'cache-control'  : 'max-age=0', 
+           'upgrade-insecure-requests':'1', 
             'authority'     : 'www.zillow.com',
             'method'        : 'GET',
-            'path'          : '/homes/',
+            'path'          : 'www.zillow.com/homes/',
             'scheme'        : 'https',
             'user-agent'    :
             '''
-            Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6)
+            Mozilla/5.0 (X11; Linux x86_64)
             AppleWebKit/537.36 (KHTML, like Gecko)
-            Chrome/61.0.3163.100 Safari/537.36'''
-            }
+            Chrome/74.0.3729.131 Safari/537.36
+            '''}
 
     # Return header
     return h
