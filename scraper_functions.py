@@ -1,3 +1,4 @@
+import pymysql
 import re
 import sys
 from io import StringIO
@@ -9,7 +10,6 @@ import urllib
 from time import sleep
 from datetime import datetime
 import random
-import mysql.connector
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 from time import sleep
@@ -20,15 +20,13 @@ from settings import *
 import sql_functions as m1
 import bot_protections as m2
 
-
+print(password)
 # Instantiate Connect to MySQL ---------------------------------------
-mydb = mysql.connector.connect(
+mydb = pymysql.connect(
         host='localhost',
         user= user,
         passwd= password,
-        database='upwork_test_db',
-        auth_plugin='mysql_native_password')
-
+        database='upwork_test_db')
 
 # Functions -----------------------------------------------------------
 
@@ -82,8 +80,8 @@ def get_max_page_num(bsObj):
        return a string that looks like 'totalPages":18'
     '''
     regex = re.compile('totalPages":[0-9][0-9]')
-    
-    # Try to get total page numbers 
+
+    # Try to get total page numbers
     try:
         re_search = re.findall(regex, links_pages)[0]
         # Get Number after colon from re_search result return ['##']
@@ -91,7 +89,7 @@ def get_max_page_num(bsObj):
         re_search = re.findall(regex_2, re_search)
         # Result
         return int(re_search[0])
-    
+
     except IndexError as err:
         logging.info('max page number generated an error')
         logging.warning(err)
@@ -309,7 +307,7 @@ def main_get_home_data(city, state, bsObj, url):
 
         # Loop over home tags and scrape data --------------------------------
         if list_homes:
-            
+
             for home in list_homes:
 
                 # Get Tag Containing Address & Zip Code
@@ -318,7 +316,7 @@ def main_get_home_data(city, state, bsObj, url):
                 # Function may return null obj. Pass if None.
                 if not clean_house_tags:
                     logging.info('No house tags found')
-                
+
                 else:
                     # Get Url
                     url = get_url(home)

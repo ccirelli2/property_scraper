@@ -1,4 +1,4 @@
-import mysql.connector
+import pymysql
 import re
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
@@ -25,12 +25,11 @@ import url_filters as m4
 # INSTANTIATE CONNECTION TO MYSQL DATABASE--------------------------------------------
 
 
-mydb = mysql.connector.connect(
+mydb = pymysql.connect(
         host='localhost',
         user= user,
         passwd= password,
-        database='upwork_test_db',
-        auth_plugin='mysql_native_password')
+        database='upwork_test_db')
 
 
 # RUN SCRAPER FUNCTION -------------------------------------------------

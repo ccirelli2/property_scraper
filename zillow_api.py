@@ -9,7 +9,7 @@ import urllib
 from time import sleep
 from datetime import datetime
 import random
-import mysql.connector
+import pymysql
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
 from settings import *
@@ -19,13 +19,11 @@ from settings import *
 import sql_functions as m1
 
 # Instantiate Connect to MySQL --------------------------
-mydb = mysql.connector.connect(
+mydb = pymysql.connect(
         host='localhost',
         user= user,
         passwd= password,
-        database='upwork_test_db',
-        auth_plugin='mysql_native_password')
-
+        database='upwork_test_db')
 '''
 m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
                           'Error possible due to website scraper protections', str(err))
