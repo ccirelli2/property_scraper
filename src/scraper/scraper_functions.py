@@ -1,39 +1,33 @@
-import pymysql
 import re
-import sys
-from io import StringIO
 from urllib.request import urlopen
-from bs4 import BeautifulSoup
-import pandas as pd
-import requests
 import urllib
 from time import sleep
 from datetime import datetime
 import random
-import pyzillow
-from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults, GetUpdatedPropertyDetails
-from time import sleep
 import logging
-from settings import *
+
+from bs4 import BeautifulSoup
+import pymysql
+import scraper.settings as settings
+
 
 # Import Project Modules ---------------------------------------------
-import sql_functions as m1
-import bot_protections as m2
+import scraper.sql_functions as m1
+import scraper.bot_protections as m2
+import scraper.zillow_api as m3
 
-print(password)
 # Instantiate Connect to MySQL ---------------------------------------
 mydb = pymysql.connect(
-        host='localhost',
-        user= user,
-        passwd= password,
-        database='upwork_test_db')
+    host=settings.host,
+    user=settings.user,
+    passwd=settings.password,
+    database=settings.database)
 
 # Functions -----------------------------------------------------------
 
 
-
 # GET BEAUTIFUL SOUP OBJECT OF PAGE OR TOTAL NUMBER OF PAGES TO SCRAPE--------------
-def get_bsObj_main_page(city, state, page, pprint=False):
+def get_bsObj_main_page(city, state, pprint=False):
     '''
     Purpose:    Obtain the bsObj for the main page where the list of houses are located.
     Input:      Seach criteria includes the city and state where the house is located
@@ -49,14 +43,14 @@ def get_bsObj_main_page(city, state, page, pprint=False):
     random_header = m2.generate_ran_headers()
 
     # Generate the url request with zillow headings
-    Content = urllib.request.Request(url, headers= random_header)
+    Content = urllib.request.Request(url, headers=random_header)
 
     html = urlopen(Content)
     # Create Beautifulsoup object
     bsObj = BeautifulSoup(html.read(), 'lxml')
 
     # Logging
-    if pprint==True:
+    if pprint:
         print(bsObj.prettify())
 
     # Return bsObj
@@ -70,10 +64,7 @@ def get_max_page_num(bsObj):
     Output:     Int value of last page'''
 
     # Get Tag Containing totalPages value
-    links_pages = str(bsObj.find('script', {'data-zrr-shared-data-key':'mobileSearchPageStore'}))
-
-    #print('Bs Object', bsObj)
-    #print('Page Links', links_pages)
+    links_pages = str(bsObj.find('script', {'data-zrr-shared-data-key': 'mobileSearchPageStore'}))
 
     # Use Regex Statement to Obtain phrase "total_Pages:##"
     '''Assuming totalPages exists on the first page, re_search will
@@ -94,25 +85,27 @@ def get_max_page_num(bsObj):
         logging.info('max page number generated an error')
         logging.warning(err)
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_max_page_num', 'url',
-                'Attempt to obtain max page number failed. Returning max page num = 20', str(err))
+                                   'Attempt to obtain max page number failed. Returning max page num = 20', str(err))
         return 20
 
     except TypeError as err:
         logging.info('max page number generated an error')
         logging.warning(err)
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_max_page_num', 'url',
-                'Attempt to obtain max page number failed.  Returning max page num = 20', str(err))
+                                   'Attempt to obtain max page number failed.  Returning max page num = 20', str(err))
         return 20
 
 # GET LIST OF HOMES --------------------------------------------------
+
+
 def get_list_homes(bsObj, url):
     '''Descr:   Obtain the photo-card object for each of the homes listed
                 on the main page.  There is import information that can be
                 scraped directly from the card like price, address, etc.
-	'''
+        '''
 
     try:
-        photo_cards = bsObj.find('ul', {'class':'photo-cards'})
+        photo_cards = bsObj.find('ul', {'class': 'photo-cards'})
         list_homes = photo_cards.findAll('li')
         return list_homes
     except AttributeError as err:
@@ -125,7 +118,7 @@ def get_list_homes(bsObj, url):
         sleep(30)
         try:
             logging.info('Trying a different approach')
-            photo_cards = bsObj.find('ul', {'class':'photo-cards photo-cards_wow'})
+            photo_cards = bsObj.find('ul', {'class': 'photo-cards photo-cards_wow'})
             list_homes = photo_cards.findAll('li')
             return list_homes
         except AttributeError as err:
@@ -137,45 +130,48 @@ def get_list_homes(bsObj, url):
 # GET ZIP CODE----------------------------------------------------------
 def clean_house_tags_4_address_zipcode_scrape(home_data):
     # Limit to specific tags contianing this phrase
-	if '<li><script type="application/ld+json">' in str(home_data):
-		home_data    = str(home_data)
-		regex        = re.compile('name.*","floor')
-		re_search    = re.search(regex, home_data)
-		re_group     = re_search.group()
-		remove_front = re_group.split(':')[1]
-		remove_back  = remove_front.split('floor')[0]
-		remove_punct = remove_back.replace('"', '')
-		# return clean tag containing address & zipcode
-		return remove_punct
+    if '<li><script type="application/ld+json">' in str(home_data):
+        home_data = str(home_data)
+        regex = re.compile('name.*","floor')
+        re_search = re.search(regex, home_data)
+        re_group = re_search.group()
+        remove_front = re_group.split(':')[1]
+        remove_back = remove_front.split('floor')[0]
+        remove_punct = remove_back.replace('"', '')
+        # return clean tag containing address & zipcode
+        return remove_punct
+    return ''
+
 
 def get_zip_code(clean_house_tag):
-	# Search for zipcode
-	regex_zip_code = re.compile('[0-9]{5},')
-	re_search_zip  = re.search(regex_zip_code, clean_house_tag)
-	re_group_zip   = re_search_zip.group()
-	zip_code       = re_group_zip.split(',')[0]
-	# Return Zip Code
-	return zip_code
+    # Search for zipcode
+    regex_zip_code = re.compile('[0-9]{5},')
+    re_search_zip = re.search(regex_zip_code, clean_house_tag)
+    re_group_zip = re_search_zip.group()
+    zip_code = re_group_zip.split(',')[0]
+    # Return Zip Code
+    return zip_code
 
 # GET ADDRESS ----------------------------------------------------------
-def get_address(clean_house_tag):
-	''' The first comma follows the street name and is followed by the city.
-	    therefore, we should be able to split on the comma and take the string
-		value in the index = 0 position to be the address'''
-	address = clean_house_tag.split(',')[0]
-	return address
 
+
+def get_address(clean_house_tag):
+    ''' The first comma follows the street name and is followed by the city.
+        therefore, we should be able to split on the comma and take the string
+            value in the index = 0 position to be the address'''
+    address = clean_house_tag.split(',')[0]
+    return address
 
 
 # GET URL ---------------------------------------------------------------------
 def get_url(home_data):
-	if 'url' in str(home_data):
+    if 'url' in str(home_data):
 
-		regex_href = re.compile('/homedetails/.+_zpid/"}')
-		re_search  = re.search(regex_href, str(home_data))
-		href     = re_search.group().split('"')[0]
-		return href
-
+        regex_href = re.compile('/homedetails/.+_zpid/"}')
+        re_search = re.search(regex_href, str(home_data))
+        href = re_search.group().split('"')[0]
+        return href
+    return ''
 
 
 # GET SCHOOL RANKINGS ----------------------------------------------------------
@@ -199,7 +195,7 @@ def get_school_ranking(url):
     # Try to Get School Ratings
     try:
         # Get Tags Associated with Shools
-        school_list = bsObj.findAll('ul', {'class':'ds-nearby-schools-list'})
+        school_list = bsObj.findAll('ul', {'class': 'ds-nearby-schools-list'})
 
         # Find All Span Tags (these tags include the ratings)
         span = school_list[0].findAll('span')
@@ -211,9 +207,9 @@ def get_school_ranking(url):
         return list_ratings
 
     except IndexError as err:
-        logging.warning('\nSchool list => {}'.format(school_list))
-        logging.warning('School ratings function generated an error => {}'.format(err))
-        logging.warning('Url that generated the error => {}'.format(url_full))
+        logging.warning('\nSchool list => %s', school_list)
+        logging.warning('School ratings function generated an error => %s', err)
+        logging.warning('Url that generated the error => %s', url_full)
         logging.warning(err)
         logging.warning('Trying a different technique\n')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
@@ -221,13 +217,12 @@ def get_school_ranking(url):
         # return list of all zeros
         return [0, 0, 0]
     except ValueError as err:
-        logging.warning('Get school ranking function generated and error => {}'.format(err))
+        logging.warning('Get school ranking function generated and error => %s', err)
         logging.warning('Returning 0,0,0')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_school_rankings', url,
                                    'Second attempt to retrieve school rankings', str(err))
         # return list of all zeros
         return [0, 0, 0]
-
 
 
 def get_sale_asking_price(home, url):
@@ -241,47 +236,44 @@ def get_sale_asking_price(home, url):
     # Test if we can find the article tag
 
     try:
-        list_price = home.find('div', {'class':'list-card-price'})\
-                    .text.replace('$','').replace(',','')
+        list_price = home.find('div', {'class': 'list-card-price'})\
+            .text.replace('$', '').replace(',', '')
 
         # Return asking price as an integer
         return int(list_price)
 
     # Except an attribute error where no tag is found
     except AttributeError as err:
-        logging.warning('Get asking price generated an error => {}'.format(err))
-        logging.warning('Returning asking price => ${}'.format('0'))
+        logging.warning('Get asking price generated an error => %s', err)
+        logging.warning('Returning asking price => $%s', '0')
         # Insert warning into database
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_sale_asking_price', url,
-                              'Value likely not found.  Returning 0', str(err))
+                                   'Value likely not found.  Returning 0', str(err))
 
         return 0
 
     # Except ValueError - some values look like this 'Est. 166283'
     except ValueError as err:
-        logging.warning('Get asking price generated an error => {}'.format(err))
+        logging.warning('Get asking price generated an error => %s', err)
         logging.warning('Try removing text in asking price')
         m1.sql_insert_warning_logs(mydb, 'module_1', 'get_sale_asking_price', url,
-                              'Value likely not found.  Returning 0', str(err))
+                                   'Value likely not found.  Returning 0', str(err))
 
         try:
-            list_price_new = list_price.replace('Est.','').replace('+','').replace('++','')\
-                .replace('--','')
-            if list_price_new != None:
+            list_price_new = list_price.replace('Est.', '').replace('+', '').replace('++', '')\
+                .replace('--', '')
+            if list_price_new is not None:
                 logging.info('Asking price scraped successfully')
                 return int(list_price)
-            else:
-                logging.warning('Unable to obtain asking price.  Returning $0')
-                return 0
+            logging.warning('Unable to obtain asking price.  Returning $0')
 
-        except ValueError as err:
+        except ValueError:
             logging.warning('Unable to clean asking price.  Returning $0')
-            return 0
 
+        return 0
 
 
 def main_get_home_data(city, state, bsObj, url):
-
 
     # Get Max Page Number
     max_page_num = get_max_page_num(bsObj)
@@ -290,8 +282,8 @@ def main_get_home_data(city, state, bsObj, url):
     for page_num in range(1, max_page_num + 1):
 
         # User Info
-        print('Scraping page {} of {} -----------------------------------------'\
-                                .format(page_num, max_page_num))
+        print('Scraping page {} of {} -----------------------------------------'
+              .format(page_num, max_page_num))
 
         # Generate Datetime Object
         pull_date = datetime.today().date()
@@ -302,7 +294,7 @@ def main_get_home_data(city, state, bsObj, url):
         # Get List of Houses (Photo-cards) for each page)
         list_homes = get_list_homes(bsObj, url)
 
-                # Count Homes Scraped Obj
+        # Count Homes Scraped Obj
         count_homes_scraped = 0
 
         # Loop over home tags and scrape data --------------------------------
@@ -341,7 +333,7 @@ def main_get_home_data(city, state, bsObj, url):
 
                     # Get Zillow Data-------------------- ------------------------------
                     val_zillow_api_data = m3.get_house_data_zillow_api(address, zip_code,
-                                                pull_date, asking_price, url)
+                                                                       pull_date, asking_price, url)
                     m1.sql_insert_function_zillow_api_data(mydb, val_zillow_api_data)
 
                     # Get School Ranking Data ------------------------------------------
@@ -354,7 +346,6 @@ def main_get_home_data(city, state, bsObj, url):
                         count_homes_scraped, total_homes_on_page))
                     count_homes_scraped += 1
 
-
             # Generate Random Sleep Period
             print('Data successfully scraped for page {}'.format(page_num))
             sleep_seconds = random.randint(5, 10)
@@ -364,6 +355,3 @@ def main_get_home_data(city, state, bsObj, url):
         # No Homes Found
         else:
             logging.warning('No homes found in search.  Ending scraper program')
-
-    return None
-

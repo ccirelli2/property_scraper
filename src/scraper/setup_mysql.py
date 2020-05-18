@@ -1,9 +1,9 @@
-import mysql.connector
-import logging
 import os
 from time import sleep
-import sql_functions as f1
-import subprocess
+import logging
+
+import mysql.connector
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -41,8 +41,10 @@ def gather_info(response=True):
             Please try again by entering one of the following responses: Yes, yes, No, no\n''')
         gather_info(False)
 
+    return ()
 
-def try2connect_mysql(username, password, connection=True):
+
+def try2connect_mysql(username, password):
 
     print('\tAttempting to connect to MySQL')
 
@@ -56,17 +58,16 @@ def try2connect_mysql(username, password, connection=True):
         print('\tConnection established')
         return True
 
-    except mysql.connector.errors.NotSupportedError as err:
+    except mysql.connector.errors.NotSupportedError:
         print('''
               Connection to MySQL database failed.
               Please try to enter your username and password again''')
         gather_info(False)
-    except mysql.connector.errors.ProgrammingError as err:
+    except mysql.connector.errors.ProgrammingError:
         print('''
               Connection to MySQL database failed.
               Please try to enter your username and password again\n''')
         gather_info(False)
-
 
 
 def create_db(username, password, database):
@@ -85,7 +86,7 @@ def create_db(username, password, database):
         sql_command = ''' CREATE DATABASE {}'''.format('upwork_test_db')
         mycursor.execute(sql_command)
         conn.commit()
-        logging.info('Database -{}- created successfully'.format(database))
+        logging.info('Database -%s- created successfully', database)
     except mysql.connector.errors.ProgrammingError as err:
         logging.info('mysql.connector generated an error')
         logging.warning(err)
@@ -94,25 +95,23 @@ def create_db(username, password, database):
         logging.warning(err)
 
 
-
-
 def import_sql_schema(username, password):
 
     try:
         logging.info('Trying connection to datbase -> upwork_test_db')
-        conn = mysql.connector.connect(
-        host='localhost',
-        user=username,
-        passwd=password,
-        database='upwork_test_db',
-        auth_plugin='mysql_native_password')
+        mysql.connector.connect(
+            host='localhost',
+            user=username,
+            passwd=password,
+            database='upwork_test_db',
+            auth_plugin='mysql_native_password')
+
         logging.info('Connection successfully established to db.  Procceding to import schema')
 
         # Use Subprocess to execute import of schema
         os.system('mysql -u root -p upwork_test_db < mysql_scraper_schema.sql')
         logging.info('Schema imported correctly')
         # Add a function to test if schema created correctly
-
 
     except mysql.connector.errors.DatabaseError as err:
         logging.info('Unable to connect to database => upwork_test_db')
@@ -123,17 +122,14 @@ def import_sql_schema(username, password):
 # EXECUTE FUNCTIONS ---------------------------------------------
 
 # Run Gather info function
-username, password = gather_info()
+user_name, pasword = gather_info()
 
 # Try Connecting to MySQL
-connection_status = try2connect_mysql(username, password)
+connection_status = try2connect_mysql(user_name, pasword)
 
 # If Connection Established Successfully
 if connection_status:
     # Create Database
-    create_db(username, password, 'upwork_test_db')
+    create_db(user_name, pasword, 'upwork_test_db')
     # Import Schema
-    import_sql_schema(username, password)
-
-
-
+    import_sql_schema(user_name, pasword)
