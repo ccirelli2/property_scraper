@@ -7,26 +7,12 @@ import random
 import logging
 
 from bs4 import BeautifulSoup
-import pymysql
-import scraper.settings as settings
 
-
-# Import Project Modules ---------------------------------------------
 import scraper.sql_functions as m1
 import scraper.bot_protections as m2
 import scraper.zillow_api as m3
 
-# Instantiate Connect to MySQL ---------------------------------------
-mydb = pymysql.connect(
-    host=settings.host,
-    user=settings.user,
-    passwd=settings.password,
-    database=settings.database)
 
-# Functions -----------------------------------------------------------
-
-
-# GET BEAUTIFUL SOUP OBJECT OF PAGE OR TOTAL NUMBER OF PAGES TO SCRAPE--------------
 def get_bsObj_main_page(city, state, pprint=False):
     '''
     Purpose:    Obtain the bsObj for the main page where the list of houses are located.
@@ -57,7 +43,7 @@ def get_bsObj_main_page(city, state, pprint=False):
     return bsObj, url
 
 
-def get_max_page_num(bsObj):
+def get_max_page_num(mydb, bsObj):
     '''
     Purpose:    Get the max page number from the main page
     Input:      The bsObj from the main page.
@@ -98,7 +84,7 @@ def get_max_page_num(bsObj):
 # GET LIST OF HOMES --------------------------------------------------
 
 
-def get_list_homes(bsObj, url):
+def get_list_homes(mydb, bsObj, url):
     '''Descr:   Obtain the photo-card object for each of the homes listed
                 on the main page.  There is import information that can be
                 scraped directly from the card like price, address, etc.
@@ -176,7 +162,7 @@ def get_url(home_data):
 
 # GET SCHOOL RANKINGS ----------------------------------------------------------
 
-def get_school_ranking(url):
+def get_school_ranking(mydb, url):
     url_full = 'https://www.zillow.com' + url
     Content = urllib.request.Request(url_full, headers={
         'authority': 'www.zillow.com',
@@ -225,7 +211,7 @@ def get_school_ranking(url):
         return [0, 0, 0]
 
 
-def get_sale_asking_price(home, url):
+def get_sale_asking_price(mydb, home, url):
     '''
     Purpose:	Get the asking price for the house from the photo tag
     home:		The input value is the individual home tag
@@ -273,10 +259,10 @@ def get_sale_asking_price(home, url):
         return 0
 
 
-def main_get_home_data(city, state, bsObj, url):
-
+def main_get_home_data(mydb, city, state, bsObj, url):
+    #  pylint: disable=too-many-locals
     # Get Max Page Number
-    max_page_num = get_max_page_num(bsObj)
+    max_page_num = get_max_page_num(mydb, bsObj)
 
     # Iterate Over Pages (max_page_num because its up to but not including)
     for page_num in range(1, max_page_num + 1):
@@ -292,7 +278,7 @@ def main_get_home_data(city, state, bsObj, url):
         bsObj = get_bsObj_main_page(city, state, page_num)
 
         # Get List of Houses (Photo-cards) for each page)
-        list_homes = get_list_homes(bsObj, url)
+        list_homes = get_list_homes(mydb, bsObj, url)
 
         # Count Homes Scraped Obj
         count_homes_scraped = 0
@@ -316,7 +302,7 @@ def main_get_home_data(city, state, bsObj, url):
                     # Get Home Details -------------------------------------------
 
                     # Get Asking Price
-                    asking_price = get_sale_asking_price(home, url)
+                    asking_price = get_sale_asking_price(mydb, home, url)
 
                     # Num home object
                     total_homes_on_page = len(list_homes)
@@ -332,12 +318,12 @@ def main_get_home_data(city, state, bsObj, url):
                     m1.sql_insert_function_addresses(mydb, val_addresses)
 
                     # Get Zillow Data-------------------- ------------------------------
-                    val_zillow_api_data = m3.get_house_data_zillow_api(address, zip_code,
+                    val_zillow_api_data = m3.get_house_data_zillow_api(mydb, address, zip_code,
                                                                        pull_date, asking_price, url)
                     m1.sql_insert_function_zillow_api_data(mydb, val_zillow_api_data)
 
                     # Get School Ranking Data ------------------------------------------
-                    school_rankings = get_school_ranking(url)
+                    school_rankings = get_school_ranking(mydb, url)
                     m1.sql_insert_function_schools(mydb, school_rankings, address,
                                                    pull_date, url)
 

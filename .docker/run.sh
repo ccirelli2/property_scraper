@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-MYSQL_SRC_DIR=${1:-`pwd`/../sql}
+MYSQL_SRC_DIR=${MYSQL_SRC_DIR:-`pwd`/../sql}
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-'password'}
 
 docker run \

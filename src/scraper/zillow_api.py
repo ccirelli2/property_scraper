@@ -3,21 +3,12 @@ from datetime import datetime
 from io import StringIO
 
 import pandas as pd
-import pymysql
 import pyzillow
 from pyzillow.pyzillow import ZillowWrapper, GetDeepSearchResults
-import scraper.settings as settings
 
 
 # Import Project Modules
 import scraper.sql_functions as m1
-
-# Instantiate Connect to MySQL --------------------------
-mydb = pymysql.connect(
-    host=settings.host,
-    user=settings.user,
-    passwd=settings.password,
-    database=settings.database)
 
 '''
 m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
@@ -25,7 +16,7 @@ m1.sql_insert_warning_logs(mydb, 'module_1', 'get_list_homes', url,
 '''
 
 
-def get_house_data_zillow_api(address, zipcode, pull_date, asking_price, url):
+def get_house_data_zillow_api(mydb, address, zipcode, pull_date, asking_price, url):  # pylint: disable=too-many-arguments
     # pylint: disable=no-member, too-many-locals, too-many-statements
     try:
         # Instantiate connection to zillow database

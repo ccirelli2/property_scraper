@@ -1,4 +1,4 @@
-# Description -----------------------------------------------------
+## Description -----------------------------------------------------
 This program is for an upwork contract to create web scraper to obtain 
 real estate listing in Colorado.  Below are the milestones of the 
 project. 
@@ -8,7 +8,7 @@ project.
 - Due April 30th	Walk client through code
 
 
-# Setup & Dependencies --------------------------------------------
+## Setup & Dependencies --------------------------------------------
 - OS		Ubuntu 19	
 
 - Python	This program was written using Python 3.7.
@@ -39,7 +39,7 @@ project.
 
 
 
-# Disclosures & Legal Responsibility ------------------------------ 
+## Disclosures & Legal Responsibility ------------------------------ 
 1.)	The user of this program acknowledges and expressely agrees that 
 	they alone take full responsibility and assume all legal liability 
 	for the use this program and agree to fully indemnify the programmer of all
@@ -52,9 +52,81 @@ project.
 3.) 	The programmer provides no gaurantees that this program will continue
     	to work after the initial installation and setup.
 
-	
+## How to
+```
+usage: main.cli run [-h] [-s STATE] [-c CITY_NAME] [-e HOST] [-u USER]
+                    [-d DATABASE] [-p PASSWORD]
+                    [STATE-ABBR] [CITY]
 
+Run the srapper.
 
+positional arguments:
+  STATE-ABBR            State to search.
+  CITY                  City with in State to search.
 
-
-
+optional arguments:
+  -h, --help            show this help message and exit
+  -s STATE, --state STATE
+                        A full state name.
+                        Examples:
+                        	Alabama
+                        	Alaska
+                        	Arizona
+                        	Arkansas
+                        	California
+                        	Colorado
+                        	Connecticut
+                        	Delaware
+                        	District Of Columbia
+                        	Florida
+                        	Georgia
+                        	Hawaii
+                        	Idaho
+                        	Illinois
+                        	Indiana
+                        	Iowa
+                        	Kansas
+                        	Kentucky
+                        	Louisiana
+                        	Maine
+                        	Maryland
+                        	Massachusetts
+                        	Michigan
+                        	Minnesota
+                        	Mississippi
+                        	Missouri
+                        	Montana
+                        	Nebraska
+                        	Nevada
+                        	New Hampshire
+                        	New Jersey
+                        	New Mexico
+                        	New York
+                        	North Carolina
+                        	North Dakota
+                        	Ohio
+                        	Oklahoma
+                        	Oregon
+                        	Pennsylvania
+                        	Rhode Island
+                        	South Carolina
+                        	South Dakota
+                        	Tennessee
+                        	Texas
+                        	Utah
+                        	Vermont
+                        	Virginia
+                        	Washington
+                        	West Virginia
+                        	Wisconsin
+                        	Wyoming
+  -c CITY_NAME, --city-name CITY_NAME
+                        Choose a city with-in the provided state.
+  -e HOST, --host HOST  Database host.
+  -u USER, --user USER  Database user.
+  -d DATABASE, --database DATABASE
+                        Database to use.
+  -p PASSWORD, --password PASSWORD
+                        Database password to use. If not provided it will default to pull SCRAPER_PASSWORD from environment.
+                        export SCRAPER_PASSWORD=<your password>
+```

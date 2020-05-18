@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+from os import path, getenv
+from sys import exit as sys_exit
+import json
+import argparse
+import logging
+
+from scraper.scraper import run_scraper
+import scraper.settings as config
+
+SCRIPT_NAME = path.basename(__file__)
+NEW_LINE = "\n"
+TAB = "\t"
+
+log_level = getattr(logging, getenv('LOGLEVEL', 'ERROR').upper(), logging.ERROR)
+log_level = log_level if log_level else logging.ERROR
+logging.basicConfig(level=log_level)
+logger = logging.getLogger('ZILLOW-SCRAPER')
+logger.setLevel(log_level)
+
+with open(path.join(path.dirname(__file__), 'scraper', 'resources', 'abbr-name.json')) as states_file:
+    states_abbr = json.load(states_file)
+    states_names = {v.lower(): k for k, v in states_abbr.items()}
+    state_abbr = list(states_abbr.keys())
+    state_names = list(map(lambda x: x.lower(), states_abbr.values()))
+
+
+def _noop(_):
+    print('Please choose a command to run.')
+
+
+def handle_all(func):
+    def handler(*argv, **argc):
+        try:
+            return func(*argv, **argc)
+        except Exception as e:  # pylint: disable=broad-except
+            logger.error(e)
+            sys_exit(1)
+
+    return handler
+
+
+@handle_all
+def run_command(args):
+    logger.debug(args)
+    state = args.state if args.state else args.state_abbr
+    city = args.city if args.city else args.city_name
+    password = args.password
+
+    if state is None or city is None:
+        raise argparse.ArgumentTypeError('Must provide a city and a state.')
+
+    if not password:
+        password = _ask_for_password()
+
+    run_scraper({
+        'host': args.host,
+        'user': args.user,
+        'password': password,
+        'database': args.database
+    }, {'state': state, 'city': city})
+
+
+def _is_valid_state(state):
+    state = str(state).strip()
+    if state.lower() not in state_names:
+        raise argparse.ArgumentTypeError('Not a valid state name.')
+    return state
+
+
+def _state_name_to_state_abbr(state):
+    state = _is_valid_state(state)
+    return states_names.get(state.lower(), None)
+
+
+def _is_valid_state_abbr(state):
+    state = str(state)
+    if state.upper() not in state_abbr:
+        raise argparse.ArgumentTypeError('Not a valid state abbreviation.')
+    return state
+
+
+def _not_empty(v, msg):
+    if not v:
+        raise argparse.ArgumentTypeError(msg)
+    return v
+
+
+def _ask_for_password():
+    pwd = input('Enter password: ')
+    return _not_empty(pwd, 'Must provide a database password.')
+
+
+def _main():
+    parser = argparse.ArgumentParser()
+    parser.set_defaults(func=_noop)
+    subparsers = parser.add_subparsers(
+        title='Commands',
+        description='',
+        help=''
+    )
+
+    subparser = subparsers.add_parser('run', aliases=['r'], description='Run the srapper.', formatter_class=argparse.RawTextHelpFormatter)
+    subparser.add_argument('-s', '--state', type=_state_name_to_state_abbr, required=False, help=f'A full state name.\nExamples:\n\t{(NEW_LINE + TAB).join(states_abbr.values())}')
+    subparser.add_argument('-c', '--city-name', type=str, required=False, help='Choose a city with-in the provided state.')
+    subparser.add_argument('state_abbr', metavar='STATE-ABBR', choices=state_abbr, nargs='?', default=None, help='State to search.')
+    subparser.add_argument('city', metavar='CITY', type=str, nargs='?', default=None, help='City with in State to search.')
+    subparser.add_argument('-e', '--host', type=str, required=False, default=config.host, help='Database host.')
+    subparser.add_argument('-u', '--user', type=str, required=False, default=config.user, help='Database user.')
+    subparser.add_argument('-d', '--database', type=str, required=False, default=config.database, help='Database to use.')
+    subparser.add_argument('-p', '--password', type=str, default=getenv('SCRAPER_PASSWORD', None), help='Database password to use. If not provided it will default to pull SCRAPER_PASSWORD from environment.\nexport SCRAPER_PASSWORD=<your password>')
+    subparser.set_defaults(func=run_command)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == '__main__':
+    _main()

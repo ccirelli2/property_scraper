@@ -31,14 +31,15 @@ installForLocalDev: install
 # MYSQL Helpers
 ######################
 MYSQL_SRC_DIR=$(shell pwd)/sql
-MYSQL_ROOT_PASSWORD := password
-MYSQL_DATABASE:= property_scraper
+MYSQL_ROOT_PASSWORD := 'password'
+MYSQL_DATABASE := 'property_scraper'
+MYSQL_USER := 'root'
 DB_HOST=$(shell docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' property-scraper-mysql)
 .PHONY: mysql
 mysql:
 	@docker run -it \
 		--rm \
-		mysql mysql -h$(DB_HOST) -uroot $(MYSQL_DATABASE) -p
+		mysql mysql -h$(DB_HOST) -u$(MYSQL_USER) $(MYSQL_DATABASE) -p
 
 .PHONY: dbip
 dbip:
